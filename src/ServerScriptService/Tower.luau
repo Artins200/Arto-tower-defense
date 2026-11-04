@@ -12,13 +12,14 @@ function Tower.new(player,kind,position,template)
  model.Parent=workspace.Towers
  local cf,size=model:GetBoundingBox(); local pivot=model:GetPivot(); local bottom=cf.Position.Y-size.Y/2
  model:PivotTo(pivot + Vector3.new(position.X-cf.Position.X,position.Y-bottom,position.Z-cf.Position.Z))
- model:SetAttribute("Owner",player.UserId); model:SetAttribute("Kind",kind); model:SetAttribute("Level",1); model:SetAttribute("Spent",Config.Towers[kind].cost); model:SetAttribute("PlacementPosition",position)
+ model:SetAttribute("UltimateReadyAt",0); model:SetAttribute("Owner",player.UserId); model:SetAttribute("Kind",kind); model:SetAttribute("Level",1); model:SetAttribute("Spent",Config.Towers[kind].cost); model:SetAttribute("PlacementPosition",position)
  CollectionService:AddTag(model,"Tower")
  local highlight=Instance.new("Highlight"); highlight.FillColor=Config.Towers[kind].color; highlight.FillTransparency=.85; highlight.OutlineColor=Config.Towers[kind].color; highlight.DepthMode=Enum.HighlightDepthMode.Occluded; highlight.Parent=model
- local self=setmetatable({owner=player,kind=kind,position=position,model=model,level=1,spent=Config.Towers[kind].cost,lastShot=0},Tower)
+ local self=setmetatable({owner=player,kind=kind,position=position,model=model,level=1,spent=Config.Towers[kind].cost,lastShot=0,placedAt=workspace:GetServerTimeNow(),readyAt=0,suppressed=false},Tower)
  return self
 end
 function Tower:update(now,enemies,fire)
+ if self.suppressed then return end
  if now-self.lastShot<Config.stats(self.kind,self.level).cooldown then return end
  local stats=Config.stats(self.kind,self.level); local origin=self.position+Vector3.new(0,4,0); local target=nil; local best=-1
  for _,e in ipairs(enemies) do

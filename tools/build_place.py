@@ -56,6 +56,7 @@ def chunk(tag, payload):
 entries = [
     ('ModuleScript', 'Config', 'src/ReplicatedStorage/Config.luau', 275),
     ('ModuleScript', 'Placement', 'src/ReplicatedStorage/Placement.luau', 275),
+    ('ModuleScript', 'CombatRules', 'src/ReplicatedStorage/CombatRules.luau', 275),
     ('ModuleScript', 'Towers', 'src/ReplicatedStorage/Towers.luau', 275),
     ('ModuleScript', 'Enemies', 'src/ReplicatedStorage/Enemies.luau', 275),
     ('ModuleScript', 'Waves', 'src/ReplicatedStorage/Waves.luau', 275),
@@ -64,6 +65,8 @@ entries = [
     ('ModuleScript', 'Tower', 'src/ServerScriptService/Tower.luau', 276),
     ('Script', 'Game', 'src/ServerScriptService/Game.server.luau', 276),
     ('LocalScript', 'UI', 'src/StarterPlayer/StarterPlayerScripts/UI.client.luau', 245),
+    ('LocalScript', 'Effects', 'src/StarterPlayer/StarterPlayerScripts/Effects.client.luau', 245),
+    ('LocalScript', 'Ultimate', 'src/StarterPlayer/StarterPlayerScripts/Ultimate.client.luau', 245),
 ]
 # This build is intentionally specific to the checked-in original.
 assert (class_count, instance_count) == (106, 307), 'Unexpected Place13 version'

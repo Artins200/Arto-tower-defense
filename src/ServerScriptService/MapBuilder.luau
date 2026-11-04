@@ -2,6 +2,7 @@
 local ServerStorage=game:GetService("ServerStorage")
 local ReplicatedStorage=game:GetService("ReplicatedStorage")
 local Lighting=game:GetService("Lighting")
+local Config=require(ReplicatedStorage:WaitForChild("Config"))
 local MapBuilder={}
 local palette={ground=Color3.fromRGB(57,91,72), deep=Color3.fromRGB(25,44,42), stone=Color3.fromRGB(62,74,77), road=Color3.fromRGB(117,111,93), trim=Color3.fromRGB(42,52,54), gold=Color3.fromRGB(249,200,112), mint=Color3.fromRGB(102,231,203), purple=Color3.fromRGB(154,110,255)}
 local function part(parent,name,size,position,color,material)
@@ -15,8 +16,30 @@ local function label(part0,title,sub,color)
  local t=Instance.new("TextLabel"); t.Size=UDim2.fromScale(1,1); t.BackgroundTransparency=1; t.Text=title.."\n"..sub; t.TextColor3=color or Color3.new(1,1,1); t.TextStrokeTransparency=.3; t.TextScaled=true; t.Font=Enum.Font.GothamBold; t.Parent=gui
 end
 local function tree(root,x,z,scale)
- decor(root,"Trunk",Vector3.new(2,6,2)*scale,Vector3.new(x,3*scale,z),Color3.fromRGB(70,60,54),Enum.Material.Wood)
- for i=1,3 do local s=(9-i*1.5)*scale; local crown=decor(root,"Pine",Vector3.new(s,4*scale,s),Vector3.new(x,(4+i*2.4)*scale,z),i%2==0 and Color3.fromRGB(35,80,64) or Color3.fromRGB(42,99,71)); crown.Shape=Enum.PartType.Ball end
+ -- Многоярусные хвойные деревья с настоящим стволом вместо шаров.
+ local trunk=decor(root,"PineTrunk",Vector3.new(1.8,8,1.8)*scale,Vector3.new(x,4*scale,z),Color3.fromRGB(92,67,50),Enum.Material.Wood)
+ for tier=1,3 do
+  local width=(11-tier*1.8)*scale; local height=(5-tier*.3)*scale; local y=(5+tier*2.5)*scale
+  for direction=0,3 do
+   local wedge=Instance.new("WedgePart"); wedge.Name="PineBranches"; wedge.Anchored=true; wedge.CanCollide=false; wedge.CanQuery=false; wedge.Size=Vector3.new(width,height,width/2); wedge.Color=tier%2==0 and Color3.fromRGB(39,104,75) or Color3.fromRGB(29,82,62); wedge.Material=Enum.Material.Grass
+   wedge.CFrame=CFrame.new(x,y,z)*CFrame.Angles(0,math.rad(direction*90),0)*CFrame.new(0,0,-width/4); wedge.Parent=root
+  end
+ end
+end
+local function wall(root,centerX,centerZ,width,depth)
+ -- Каменные стены ограждают обе зоны, оставляя маршрут и поверхность арены свободными.
+ for _,z in {centerZ-depth/2,centerZ+depth/2} do
+  part(root,"BoundaryWall",Vector3.new(width+4,9,3),Vector3.new(centerX,4.5,z),palette.stone,Enum.Material.Slate)
+  decor(root,"WallCap",Vector3.new(width+5,.7,4),Vector3.new(centerX,9.2,z),palette.trim,Enum.Material.Slate)
+  for x=centerX-width/2,centerX+width/2,25 do
+   decor(root,"WallPillar",Vector3.new(4,11,4),Vector3.new(x,5.5,z),palette.trim,Enum.Material.Slate)
+   decor(root,"Lantern",Vector3.new(1.2,1.5,1.2),Vector3.new(x,11.5,z),palette.gold,Enum.Material.Neon)
+  end
+ end
+ for _,x in {centerX-width/2,centerX+width/2} do
+  part(root,"BoundaryWall",Vector3.new(3,9,depth),Vector3.new(x,4.5,centerZ),palette.stone,Enum.Material.Slate)
+  decor(root,"WallCap",Vector3.new(4,.7,depth),Vector3.new(x,9.2,centerZ),palette.trim,Enum.Material.Slate)
+ end
 end
 function MapBuilder.build()
  -- Исходные риги Place13 не уничтожаются; предпросмотр — отдельная безопасная копия.
@@ -30,17 +53,21 @@ function MapBuilder.build()
  for _,n in {"Towers","Enemies","Projectiles"} do local f=Instance.new("Folder"); f.Name=n; f.Parent=templates end
  local projectile=part(templates.Projectiles,"Projectile",Vector3.new(.8,.8,.8),Vector3.zero,Color3.new(1,1,1),Enum.Material.Neon); projectile.Shape=Enum.PartType.Ball; projectile.CanCollide=false; projectile.CanQuery=false
  for _,name in {"HitSound","DeathSound"} do local sound=Instance.new("Sound"); sound.Name=name; sound.SoundId=""; sound.Parent=templates.Projectiles end
- local original=originals:FindFirstChild("dibil1488777")
- if original then
-  local copy=original:Clone(); copy.Name="StarterUnit"; copy.Parent=templates.Towers
-  local preview=copy:Clone(); preview.Name="StarterPreview"
-  for _,d in preview:GetDescendants() do if d:IsA("LuaSourceContainer") then d:Destroy() elseif d:IsA("BasePart") then d.Anchored=true; d.CanCollide=false; d.CanQuery=false elseif d:IsA("Humanoid") then d.DisplayDistanceType=Enum.HumanoidDisplayDistanceType.None end end
-  preview.Parent=ReplicatedStorage
+ local previews=Instance.new("Folder"); previews.Name="UnitPreviews"; previews.Parent=ReplicatedStorage
+ for kind,info in pairs(Config.Towers) do
+  local original=originals:FindFirstChild(info.model)
+  if original and original:IsA("Model") then
+   local copy=original:Clone(); copy.Name=kind; copy.Parent=templates.Towers
+   local preview=copy:Clone(); preview.Name=kind
+   for _,d in preview:GetDescendants() do if d:IsA("LuaSourceContainer") then d:Destroy() elseif d:IsA("BasePart") then d.Anchored=true; d.CanCollide=false; d.CanQuery=false elseif d:IsA("Humanoid") then d.DisplayDistanceType=Enum.HumanoidDisplayDistanceType.None end end
+   preview.Parent=previews
+  else warn("Tower Defense: модель не найдена: "..info.model) end
  end
  local root=Instance.new("Folder"); root.Name="TDMap"; root.Parent=workspace
  for _,n in {"Towers","Enemies","Waypoints"} do local f=Instance.new("Folder"); f.Name=n; f.Parent=workspace end
  -- Лобби: широкая центральная площадь, обрамлённый портал и отдельная зона призыва.
  part(root,"Lobby",Vector3.new(110,2,110),Vector3.new(0,-1,0),palette.deep,Enum.Material.Slate)
+ wall(root,0,0,110,110)
  decor(root,"LobbyInlay",Vector3.new(82,.15,82),Vector3.new(0,.04,0),Color3.fromRGB(38,59,58),Enum.Material.Slate)
  for _,x in {-48,48} do decor(root,"LobbyBorder",Vector3.new(1,.2,98),Vector3.new(x,.15,0),palette.mint,Enum.Material.Neon) end
  local spawn=Instance.new("SpawnLocation"); spawn.Name="LobbySpawn"; spawn.Size=Vector3.new(12,1,12); spawn.Position=Vector3.new(0,.5,25); spawn.Anchored=true; spawn.Neutral=true; spawn.Color=palette.mint; spawn.Material=Enum.Material.Neon; spawn.Parent=root
@@ -55,6 +82,9 @@ function MapBuilder.build()
  for _,x in {-42,42} do for _,z in {-38,38} do tree(root,x,z,.8) end end
  -- Арена — остров с рамкой и лесом по краям; центральная поверхность остаётся свободной для постройки.
  local arena=part(root,"Arena",Vector3.new(200,2,170),Vector3.new(300,-1,0),palette.ground,Enum.Material.Grass)
+ -- Видимая площадка появления — единственная запретная зона, кроме дороги.
+ local arenaSpawnZone=decor(root,"ArenaSpawnZone",Vector3.new(12,.08,12),Vector3.new(245,.06,0),palette.mint,Enum.Material.Neon); arenaSpawnZone.Transparency=.45
+ wall(root,300,0,204,174)
  decor(root,"IslandBase",Vector3.new(208,7,178),Vector3.new(300,-5,0),palette.deep,Enum.Material.Slate)
  for _,z in {-85,85} do decor(root,"ArenaRim",Vector3.new(204,1,2),Vector3.new(300,.2,z),palette.stone,Enum.Material.Slate) end
  for _,x in {200,400} do decor(root,"ArenaRim",Vector3.new(2,1,170),Vector3.new(x,.2,0),palette.stone,Enum.Material.Slate) end
@@ -83,6 +113,6 @@ function MapBuilder.build()
  for i=0,10 do local x=205+i*19; tree(root,x,-92,.7+(i%3)*.13); tree(root,x,92,.75+((i+1)%3)*.13) end
  for i=0,7 do local z=-75+i*21; tree(root,193,z,.8+(i%2)*.14); tree(root,407,z,.8+((i+1)%2)*.14) end
  Lighting.ClockTime=15.5; Lighting.Brightness=2; Lighting.Ambient=Color3.fromRGB(122,141,137); Lighting.OutdoorAmbient=Color3.fromRGB(140,158,148)
- return {portal=prompt,spin=spin,arena=arena,arenaSpawn=CFrame.new(245,4,0),lobbySpawn=CFrame.new(0,4,25),coords=coords,templates=templates}
+ return {portal=prompt,spin=spin,base=base,arena=arena,spawnZone=arenaSpawnZone,arenaSpawn=CFrame.new(245,4,0),lobbySpawn=CFrame.new(0,4,25),coords=coords,templates=templates}
 end
 return MapBuilder
