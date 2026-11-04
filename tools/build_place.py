@@ -64,6 +64,7 @@ entries = [
     ('ModuleScript', 'Tower', 'src/ServerScriptService/Tower.luau', 276),
     ('Script', 'Game', 'src/ServerScriptService/Game.server.luau', 276),
     ('LocalScript', 'UI', 'src/StarterPlayer/StarterPlayerScripts/UI.client.luau', 245),
+    ('LocalScript', 'Effects', 'src/StarterPlayer/StarterPlayerScripts/Effects.client.luau', 245),
 ]
 # This build is intentionally specific to the checked-in original.
 assert (class_count, instance_count) == (106, 307), 'Unexpected Place13 version'
