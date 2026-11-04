@@ -72,7 +72,7 @@ for ref, obj in objects.items():
             assert obj['parent'] == 276
             path = root / f'src/ServerScriptService/{name}.luau'
         assert obj['Source'] == path.read_text(encoding='utf-8'), path
-expected = {'Config','Placement','Towers','Enemies','Waves','MapBuilder','Enemy','Tower','Game','UI','Effects'}
+expected = {'Config','Placement','CombatRules','Towers','Enemies','Waves','MapBuilder','Enemy','Tower','Game','UI','Effects','Ultimate'}
 found = {o.get('Name') for o in objects.values() if o.get('Source') and o['class'] in ('Script','LocalScript','ModuleScript')}
 assert found == expected, (found, expected)
-print('OK: four source rigs and 11 matching scripts with correct parents')
+print('OK: four source rigs and 13 matching scripts with correct parents')

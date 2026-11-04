@@ -70,8 +70,23 @@ function Enemy:hit(damage, slow, duration)
  if slow and (os.clock()>=self.slowUntil or slow<=self.slowFactor) then self.slowFactor=slow; self.slowUntil=os.clock()+duration end
  if self.hp<=0 then self.alive=false; self.onDeath(self); local model=self.model; task.delay(.35,function() model:Destroy() end) end
 end
+-- Ульта льда останавливает движение, а оболочка следует за моделью через PivotTo.
+function Enemy:freeze(duration)
+ if not self.alive then return end
+ self.slowFactor=0; self.slowUntil=math.max(self.slowUntil,os.clock()+duration)
+ if not self.model:FindFirstChild("IcePrison") and self.model.PrimaryPart then
+  local ice=Instance.new("Part"); ice.Name="IcePrison"; ice.Size=Vector3.new(5,6,7); ice.CFrame=self.model.PrimaryPart.CFrame; ice.Anchored=true; ice.CanCollide=false; ice.CanTouch=false; ice.CanQuery=false; ice.Material=Enum.Material.Ice; ice.Color=Color3.fromRGB(130,224,255); ice.Transparency=.55; ice.Parent=self.model
+ end
+end
+-- Бanish засчитывается как устранение, но противник ненадолго появляется за картой.
+function Enemy:banish(destination)
+ if not self.alive then return end
+ self.alive=false; self.model:PivotTo(CFrame.new(destination)); self.onDeath(self)
+ local model=self.model; task.delay(1.5,function() model:Destroy() end)
+end
 function Enemy:update(dt)
  if not self.alive then return end
+ if os.clock()>=self.slowUntil then local ice=self.model:FindFirstChild("IcePrison"); if ice then ice:Destroy() end end
  local factor=os.clock()<self.slowUntil and self.slowFactor or 1
  self.walkTime+=dt*factor
  local remaining=self.speed*factor*dt

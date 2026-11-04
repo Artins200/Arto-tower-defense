@@ -82,6 +82,8 @@ function MapBuilder.build()
  for _,x in {-42,42} do for _,z in {-38,38} do tree(root,x,z,.8) end end
  -- Арена — остров с рамкой и лесом по краям; центральная поверхность остаётся свободной для постройки.
  local arena=part(root,"Arena",Vector3.new(200,2,170),Vector3.new(300,-1,0),palette.ground,Enum.Material.Grass)
+ -- Видимая площадка появления — единственная запретная зона, кроме дороги.
+ local arenaSpawnZone=decor(root,"ArenaSpawnZone",Vector3.new(12,.08,12),Vector3.new(245,.06,0),palette.mint,Enum.Material.Neon); arenaSpawnZone.Transparency=.45
  wall(root,300,0,204,174)
  decor(root,"IslandBase",Vector3.new(208,7,178),Vector3.new(300,-5,0),palette.deep,Enum.Material.Slate)
  for _,z in {-85,85} do decor(root,"ArenaRim",Vector3.new(204,1,2),Vector3.new(300,.2,z),palette.stone,Enum.Material.Slate) end
@@ -111,6 +113,6 @@ function MapBuilder.build()
  for i=0,10 do local x=205+i*19; tree(root,x,-92,.7+(i%3)*.13); tree(root,x,92,.75+((i+1)%3)*.13) end
  for i=0,7 do local z=-75+i*21; tree(root,193,z,.8+(i%2)*.14); tree(root,407,z,.8+((i+1)%2)*.14) end
  Lighting.ClockTime=15.5; Lighting.Brightness=2; Lighting.Ambient=Color3.fromRGB(122,141,137); Lighting.OutdoorAmbient=Color3.fromRGB(140,158,148)
- return {portal=prompt,spin=spin,base=base,arena=arena,arenaSpawn=CFrame.new(245,4,0),lobbySpawn=CFrame.new(0,4,25),coords=coords,templates=templates}
+ return {portal=prompt,spin=spin,base=base,arena=arena,spawnZone=arenaSpawnZone,arenaSpawn=CFrame.new(245,4,0),lobbySpawn=CFrame.new(0,4,25),coords=coords,templates=templates}
 end
 return MapBuilder
