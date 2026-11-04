@@ -55,6 +55,7 @@ def chunk(tag, payload):
 # Referents and service IDs checked against Place13, not arbitrary IDs in another place.
 entries = [
     ('ModuleScript', 'Config', 'src/ReplicatedStorage/Config.luau', 275),
+    ('ModuleScript', 'Placement', 'src/ReplicatedStorage/Placement.luau', 275),
     ('ModuleScript', 'Towers', 'src/ReplicatedStorage/Towers.luau', 275),
     ('ModuleScript', 'Enemies', 'src/ReplicatedStorage/Enemies.luau', 275),
     ('ModuleScript', 'Waves', 'src/ReplicatedStorage/Waves.luau', 275),

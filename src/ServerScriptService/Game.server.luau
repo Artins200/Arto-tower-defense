@@ -6,6 +6,7 @@ local Config=require(ReplicatedStorage:WaitForChild("Config"))
 local Map=require(script.Parent.MapBuilder).build()
 local Enemy=require(script.Parent.Enemy)
 local Tower=require(script.Parent.Tower)
+local Placement=require(ReplicatedStorage.Placement)
 Enemy.prepare(Map.templates.Enemies)
 local remote=Instance.new("RemoteEvent"); remote.Name="TDRequest"; remote.Parent=ReplicatedStorage
 local notice=Instance.new("RemoteEvent"); notice.Name="TDNotice"; notice.Parent=ReplicatedStorage
@@ -94,14 +95,20 @@ connections[#connections+1]=remote.OnServerEvent:Connect(function(p,action,arg)
   if participants[p] and p==owner and phase=="Intermission" then beginWave() end
  elseif action=="Place" then
   if not participants[p] or (phase~="Wave" and phase~="Intermission") or typeof(arg)~="table" then return end
-  local kind,plot=arg.kind,arg.plot
-  if typeof(kind)~="string" or not Config.Towers[kind] or not unlocked[p][kind] or typeof(plot)~="Instance" or not plot:IsA("BasePart") or plot.Parent~=workspace.Plots or plot:GetAttribute("Occupied") or not near(p,plot.Position,35) then return end
+  local kind,position=arg.kind,arg.position
+  if typeof(kind)~="string" or not Config.Towers[kind] or not unlocked[p][kind] or typeof(position)~="Vector3" then return end
+  -- Координата не доверяется клиенту: проверяем границы, дорогу, расстояние и соседей.
+  if not near(p,Map.arena.Position,300) or not near(p,position,300) then return end
+  local occupied={}; for _,t in pairs(towers) do occupied[#occupied+1]=t.position end
+  local valid,reason=Placement.valid(position,Map.arena,Map.coords,occupied)
+  if not valid then say(p,reason); return end
+  position=Vector3.new(position.X,Map.arena.Position.Y+Map.arena.Size.Y/2,position.Z)
   local price=Config.Towers[kind].cost; local balance=p:GetAttribute("Gold") or 0; if balance<price then say(p,"Недостаточно золота") return end
   local template=Map.templates.Towers:FindFirstChild("StarterUnit"); if not template then say(p,"Не найдена модель dibil1488777 в Place13") return end
-  gold(p,balance-price); local tower=Tower.new(p,kind,plot,template); towers[tower.model]=tower
+  local tower=Tower.new(p,kind,position,template); gold(p,balance-price); towers[tower.model]=tower
  elseif action=="Upgrade" or action=="Sell" then
   if not participants[p] or (phase~="Wave" and phase~="Intermission") or typeof(arg)~="Instance" then return end
-  local t=towers[arg]; if not t or t.owner~=p or not near(p,t.plot.Position,35) then return end
+  local t=towers[arg]; if not t or t.owner~=p or not near(p,Map.arena.Position,300) or not near(p,t.position,300) then return end
   if action=="Sell" then gold(p,(p:GetAttribute("Gold") or 0)+math.floor(t.spent*Config.SellRatio)); towers[arg]=nil; t:destroy()
   else if t.level>=3 then say(p,"Максимальный уровень") return end; local cost=Config.upgradeCost(t.kind,t.level); local balance=p:GetAttribute("Gold") or 0; if balance<cost then say(p,"Недостаточно золота") return end; gold(p,balance-cost); t:upgrade() end
  end

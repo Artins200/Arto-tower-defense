@@ -41,6 +41,14 @@ function Enemy.new(kind, difficulty, coords, templates, onDeath, onEscape)
  local hp=math.floor(config.hp*difficulty.hp)
  local self=setmetatable({kind=kind,model=model,hp=hp,maxHp=hp,speed=config.speed*difficulty.speed,coords=coords,segment=1,distance=0,progress=0,slowFactor=1,slowUntil=0,alive=true,onDeath=onDeath,onEscape=onEscape},Enemy)
  model:SetAttribute("EnemyKind",kind); model:SetAttribute("HP",hp); model:SetAttribute("MaxHP",hp)
+ -- Сохраняем локальные положения лап: каждая двигается относительно корпуса.
+ self.legs={}; self.walkTime=0
+ for _,p in model:GetChildren() do
+  if p:IsA("BasePart") and p.Name=="Leg" then
+   local relative=model.PrimaryPart.CFrame:ToObjectSpace(p.CFrame)
+   table.insert(self.legs,{part=p,offset=relative,phase=relative.Position.X*relative.Position.Z>0 and 0 or math.pi})
+  end
+ end
  local gui=Instance.new("BillboardGui"); gui.Name="Health"; gui.Size=UDim2.fromOffset(76,30); gui.StudsOffset=Vector3.new(0,5.5,0); gui.AlwaysOnTop=true; gui.Parent=model.PrimaryPart
  local title=Instance.new("TextLabel"); title.Size=UDim2.new(1,0,0,16); title.BackgroundTransparency=1; title.Text=config.name; title.TextColor3=Color3.new(1,1,1); title.TextStrokeTransparency=.4; title.Font=Enum.Font.GothamBold; title.TextScaled=true; title.Parent=gui
  local back=Instance.new("Frame"); back.Position=UDim2.new(0,0,0,18); back.Size=UDim2.new(1,0,0,6); back.BackgroundColor3=Color3.fromRGB(37,42,46); back.BorderSizePixel=0; back.Parent=gui
@@ -65,11 +73,15 @@ end
 function Enemy:update(dt)
  if not self.alive then return end
  local factor=os.clock()<self.slowUntil and self.slowFactor or 1
+ self.walkTime+=dt*factor
  local remaining=self.speed*factor*dt
  while remaining>0 and self.segment<#self.coords do
   local a=self.coords[self.segment]; local b=self.coords[self.segment+1]; local length=(b-a).Magnitude; local step=math.min(remaining,length-self.distance)
   self.distance+=step; self.progress+=step; remaining-=step
-  local pos=a:Lerp(b,self.distance/length)+Vector3.new(0,2.5,0); self.model:PivotTo(CFrame.lookAt(pos,pos+(b-a)))
+  local bob=math.abs(math.sin(self.walkTime*8))*0.12
+  local pos=a:Lerp(b,self.distance/length)+Vector3.new(0,2.5+bob,0); self.model:PivotTo(CFrame.lookAt(pos,pos+(b-a)))
+  local root=self.model.PrimaryPart
+  if root then for _,leg in ipairs(self.legs) do leg.part.CFrame=root.CFrame*leg.offset*CFrame.Angles(math.sin(self.walkTime*8+leg.phase)*.5,0,0) end end
   if self.distance>=length-0.001 then self.segment+=1; self.distance=0 end
  end
  if self.segment>=#self.coords then self.alive=false; self.onEscape(self); self.model:Destroy() end
